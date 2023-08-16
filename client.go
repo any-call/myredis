@@ -1,6 +1,7 @@
 package myredis
 
 import (
+	"encoding/json"
 	"github.com/gomodule/redigo/redis"
 	"sync"
 	"time"
@@ -35,7 +36,12 @@ func NewClient(address string, password string, db int) Client {
 }
 
 func (self *client) Set(key string, value any, ttl int) error {
-	if _, err := self.doCommand("SET", key, value); err != nil {
+	bValue, err := json.Marshal(value)
+	if err != nil {
+		return err
+	}
+
+	if _, err := self.doCommand("SET", key, bValue); err != nil {
 		return err
 	}
 
@@ -58,7 +64,12 @@ func (self *client) Get(key string) (any, error) {
 		return nil, ErrNotFound
 	}
 
-	return v, nil
+	var ret any
+	if err := json.Unmarshal(v.([]byte), &ret); err != nil {
+		return nil, err
+	}
+
+	return ret, nil
 }
 
 func (self *client) Del(key string) error {

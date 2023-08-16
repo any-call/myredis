@@ -8,7 +8,7 @@ import (
 
 func TestNewClient(t *testing.T) {
 	c := NewClient(os.Getenv("REDIS_ADDR"), os.Getenv("REDIS_PASSWD"), 3)
-	if err := c.Set("001", "001", 5); err != nil {
+	if err := c.Set("001", "sssss", 5); err != nil {
 		t.Error("set err", err)
 		return
 	}
@@ -31,7 +31,6 @@ func TestNewClient(t *testing.T) {
 		t.Error("1 get err:", err)
 		return
 	} else {
-		t.Log("get 001:", v)
 		a, ok := To[string](v)
 		t.Log("get 001:", a, ok)
 	}
