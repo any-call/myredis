@@ -1,7 +1,8 @@
 package myredis
 
 import (
-	"encoding/json"
+	"bytes"
+	"encoding/gob"
 	"github.com/gomodule/redigo/redis"
 	"sync"
 	"time"
@@ -36,7 +37,7 @@ func NewClient(address string, password string, db int) Client {
 }
 
 func (self *client) Set(key string, value any, ttl int) error {
-	bValue, err := json.Marshal(value)
+	bValue, err := self.obj2Stream(value)
 	if err != nil {
 		return err
 	}
@@ -54,7 +55,7 @@ func (self *client) Set(key string, value any, ttl int) error {
 	return nil
 }
 
-func (self *client) Get(key string) (any, error) {
+func (self *client) Get(key string) ([]byte, error) {
 	v, err := self.doCommand("GET", key)
 	if err != nil {
 		return nil, err
@@ -64,12 +65,7 @@ func (self *client) Get(key string) (any, error) {
 		return nil, ErrNotFound
 	}
 
-	var ret any
-	if err := json.Unmarshal(v.([]byte), &ret); err != nil {
-		return nil, err
-	}
-
-	return ret, nil
+	return v.([]byte), nil
 }
 
 func (self *client) Del(key string) error {
@@ -112,4 +108,14 @@ func (self *client) doCommand(cmd string, arg ...interface{}) (interface{}, erro
 	}
 
 	return conn.Do(cmd, arg...)
+}
+
+func (self *client) obj2Stream(obj any) ([]byte, error) {
+	var buff bytes.Buffer
+	enc := gob.NewEncoder(&buff)
+	if err := enc.Encode(obj); err != nil {
+		return nil, err
+	}
+
+	return buff.Bytes(), nil
 }

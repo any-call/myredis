@@ -1,10 +1,14 @@
 package myredis
 
-import "fmt"
+import (
+	"bytes"
+	"encoding/gob"
+	"fmt"
+)
 
 type Client interface {
 	Set(key string, v any, ttl int) error //ttl==0 ，永不过期
-	Get(key string) (any, error)
+	Get(key string) ([]byte, error)
 	Del(key string) error
 	Exist(key string) (bool, error)
 	RemainingTTL(key string) (int64, error)
@@ -15,12 +19,14 @@ var (
 	ErrNotFound = fmt.Errorf("the key not found")
 )
 
-func To[E any](p any) (e E, err error) {
-	var ok bool
-	if e, ok = p.(E); ok {
-		return e, nil
+func StreamToObject[E any](b []byte) (ret E, err error) {
+	reader := bytes.NewReader(b)
+	dec := gob.NewDecoder(reader)
+	if err = dec.Decode(&ret); err != nil {
+		return ret, err
 	}
-	return e, fmt.Errorf("convert class fail")
+
+	return ret, nil
 }
 
 //redis 常用指令说明
