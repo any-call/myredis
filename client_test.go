@@ -18,9 +18,7 @@ func TestNewClient(t *testing.T) {
 		Name string
 	}
 
-	if err := c.Set("001", &Tmpstuct{
-		ID: 1, Name: "Luis.jin",
-	}, 5); err != nil {
+	if err := c.Set("001", "4232323", 5); err != nil {
 		t.Error("set err", err)
 		return
 	}
@@ -43,7 +41,7 @@ func TestNewClient(t *testing.T) {
 		t.Error("1 get err:", err)
 		return
 	} else {
-		ret, err := StreamToObject[Tmpstuct11](v)
+		ret, err := StreamToObject[string](v)
 		t.Log("get 001:", ret, err)
 	}
 
