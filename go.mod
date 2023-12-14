@@ -1,4 +1,4 @@
-module github.com/any-call/myredis
+module gitee.com/any-call/myredis
 
 go 1.20
 
