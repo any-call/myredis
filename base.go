@@ -8,7 +8,7 @@ import (
 
 type Client interface {
 	Set(key string, v any, ttl int) error //ttl==0 ，永不过期
-	Get(key string) ([]byte, error)
+	Get(key string, v any) error
 	Del(key string) error
 	Exist(key string) (bool, error)
 	RemainingTTL(key string) (int64, error)

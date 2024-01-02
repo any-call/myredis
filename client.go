@@ -3,6 +3,7 @@ package myredis
 import (
 	"bytes"
 	"encoding/gob"
+	"fmt"
 	"github.com/gomodule/redigo/redis"
 	"sync"
 	"time"
@@ -55,17 +56,22 @@ func (self *client) Set(key string, value any, ttl int) error {
 	return nil
 }
 
-func (self *client) Get(key string) ([]byte, error) {
+func (self *client) Get(key string, model any) error {
 	v, err := self.doCommand("GET", key)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if v == nil {
-		return nil, ErrNotFound
+		return ErrNotFound
 	}
 
-	return v.([]byte), nil
+	bv, ok := v.([]byte)
+	if !ok {
+		return fmt.Errorf("incorrect data type")
+	}
+
+	return self.stream2Obj(bv, model)
 }
 
 func (self *client) Del(key string) error {
@@ -118,4 +124,9 @@ func (self *client) obj2Stream(obj any) ([]byte, error) {
 	}
 
 	return buff.Bytes(), nil
+}
+
+func (self *client) stream2Obj(stream []byte, model any) error {
+	dec := gob.NewDecoder(bytes.NewReader(stream))
+	return dec.Decode(model)
 }
