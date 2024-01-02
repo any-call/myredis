@@ -7,18 +7,16 @@ import (
 )
 
 func TestNewClient(t *testing.T) {
-	c := NewClient(os.Getenv("REDIS_ADDR"), os.Getenv("REDIS_PASSWD"), 3)
+	c := NewClient(os.Getenv("REDIS_ADDR"), os.Getenv("REDIS_PASSWD"), 2)
 	type Tmpstuct struct {
 		ID   int64
 		Name string
 	}
 
-	type Tmpstuct11 struct {
-		ID   int64
-		Name string
-	}
-
-	if err := c.Set("001", "4232323", 5); err != nil {
+	if err := c.Set("001", &Tmpstuct{
+		ID:   1,
+		Name: "12345",
+	}, OneMinute); err != nil {
 		t.Error("set err", err)
 		return
 	}
@@ -37,15 +35,15 @@ func TestNewClient(t *testing.T) {
 		t.Log("remaining 001:", v)
 	}
 
-	if v, err := c.Get("001"); err != nil {
+	var aa Tmpstuct
+	if err := c.Get("001", &aa); err != nil {
 		t.Error("1 get err:", err)
 		return
 	} else {
-		ret, err := StreamToObject[string](v)
-		t.Log("get 001:", ret, err)
+		t.Log("get oo1 :", aa)
 	}
 
-	time.Sleep(time.Second * 3)
+	time.Sleep(time.Second * 60)
 	t.Log("after time.sleep: 6s ")
 	if v, err := c.Exist("001"); err != nil {
 		t.Error("exist err:", err)
@@ -76,14 +74,6 @@ func TestNewClient(t *testing.T) {
 	//	t.Error("3 delete err:", err)
 	//	return
 	//}
-
-	if v, err := c.Get("001"); err != nil {
-		t.Error("1 get err:", err)
-		return
-	} else {
-		ret, err := StreamToObject[map[string]any](v)
-		t.Log("get 001:", ret, err)
-	}
 
 	t.Log("test ok")
 }

@@ -6,6 +6,13 @@ import (
 	"fmt"
 )
 
+const (
+	OneSecond = 1
+	OneMinute = 60 * OneSecond
+	OneHour   = 60 * OneMinute
+	OneDay    = OneHour * 24
+)
+
 type Client interface {
 	Set(key string, v any, ttl int) error //ttl==0 ，永不过期
 	Get(key string, v any) error
