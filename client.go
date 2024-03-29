@@ -3,6 +3,7 @@ package myredis
 import (
 	"bytes"
 	"encoding/gob"
+	"encoding/json"
 	"fmt"
 	"github.com/gomodule/redigo/redis"
 	"sync"
@@ -56,6 +57,25 @@ func (self *client) Set(key string, value any, ttl int) error {
 	return nil
 }
 
+func (self *client) SetAsJson(key string, v any, ttl int) error {
+	bValue, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	if _, err := self.doCommand("SET", key, bValue); err != nil {
+		return err
+	}
+
+	if ttl != 0 {
+		if _, err := self.doCommand("EXPIRE", key, ttl); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (self *client) Get(key string, model any) error {
 	v, err := self.doCommand("GET", key)
 	if err != nil {
@@ -72,6 +92,24 @@ func (self *client) Get(key string, model any) error {
 	}
 
 	return self.stream2Obj(bv, model)
+}
+
+func (self *client) GetFromJson(key string, model any) error {
+	v, err := self.doCommand("GET", key)
+	if err != nil {
+		return err
+	}
+
+	if v == nil {
+		return ErrNotFound
+	}
+
+	bv, ok := v.([]byte)
+	if !ok {
+		return fmt.Errorf("incorrect data type")
+	}
+
+	return json.Unmarshal(bv, model)
 }
 
 func (self *client) Del(key string) error {
