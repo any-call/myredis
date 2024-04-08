@@ -16,6 +16,8 @@ const (
 type Client interface {
 	Set(key string, v any, ttl int) error //ttl==0 ，永不过期
 	SetAsJson(key string, v any, ttl int) error
+	AcquireLock(key string, ttl int) (bool, error)
+	ReleaseLock(key string) error
 	Get(key string, v any) error
 	GetFromJson(key string, v any) error
 	Del(key string) error

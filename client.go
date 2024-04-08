@@ -112,6 +112,28 @@ func (self *client) GetFromJson(key string, model any) error {
 	return json.Unmarshal(bv, model)
 }
 
+func (self *client) AcquireLock(key string, ttl int) (bool, error) {
+	nx, err := redis.Int(self.doCommand("SETNX", key, 1))
+	if err != nil {
+		return false, err
+	}
+
+	if nx == 1 {
+		if ttl != 0 {
+			if _, err := self.doCommand("EXPIRE", key, ttl); err != nil {
+				return false, err
+			}
+		}
+		return true, nil
+	}
+
+	return false, nil
+}
+
+func (self *client) ReleaseLock(key string) error {
+	return self.Del(key)
+}
+
 func (self *client) Del(key string) error {
 	_, err := self.doCommand("DEL", key)
 	return err
