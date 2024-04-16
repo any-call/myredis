@@ -162,6 +162,11 @@ func (self *client) RemainingTTL(key string) (int64, error) {
 	return v.(int64), nil
 }
 
+func (self *client) Conn() error {
+	_, err := self.redisClient.Dial()
+	return err
+}
+
 func (self *client) doCommand(cmd string, arg ...interface{}) (interface{}, error) {
 	self.Lock()
 	defer self.Unlock()

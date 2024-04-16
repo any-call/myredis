@@ -8,6 +8,11 @@ import (
 func TestNewClient(t *testing.T) {
 	c := NewClient(os.Getenv("REDIS_ADDR"), os.Getenv("REDIS_PASSWD"), 2)
 
+	if err := c.Conn(); err != nil {
+		t.Error("conn is err:", err)
+		return
+	}
+
 	b, err := c.AcquireLock("task:001", 60)
 	if err != nil {
 		t.Error("acquire lock err", err, b)

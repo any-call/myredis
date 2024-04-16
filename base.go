@@ -24,6 +24,7 @@ type Client interface {
 	Exist(key string) (bool, error)
 	RemainingTTL(key string) (int64, error)
 	Expire(key string, ttl int) error
+	Conn() error
 }
 
 var (
