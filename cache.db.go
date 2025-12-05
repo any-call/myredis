@@ -65,6 +65,28 @@ func (r *DBCache[T]) First(condition func(ret T) bool) (*T, error) {
 	return nil, fmt.Errorf("no match record")
 }
 
+func (r *DBCache[T]) FirstSorted(
+	cond func(T) bool,
+	less func(a, b T) bool,
+) (*T, error) {
+	list, err := r.Find(cond)
+	if err != nil {
+		return nil, err
+	}
+
+	if list == nil || len(list) == 0 {
+		return nil, fmt.Errorf("no matching record")
+	}
+
+	if less != nil {
+		sort.Slice(list, func(i, j int) bool {
+			return less(list[i], list[j])
+		})
+	}
+
+	return &list[0], nil
+}
+
 func (r *DBCache[T]) Find(cond func(T) bool) ([]T, error) {
 	list, err := r.List()
 	if err != nil {
