@@ -1,7 +1,6 @@
 package myredis
 
 import (
-	"fmt"
 	"sort"
 )
 
@@ -53,7 +52,7 @@ func (r *DBCache[T]) First(condition func(ret T) bool) (*T, error) {
 		if len(list) > 0 {
 			return &list[0], err
 		}
-		return nil, fmt.Errorf("empty record")
+		return nil, ErrRecordNotFound
 	}
 
 	for _, item := range list {
@@ -62,7 +61,7 @@ func (r *DBCache[T]) First(condition func(ret T) bool) (*T, error) {
 		}
 	}
 
-	return nil, fmt.Errorf("no match record")
+	return nil, ErrRecordNotFound
 }
 
 func (r *DBCache[T]) FirstSorted(
