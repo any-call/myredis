@@ -75,7 +75,7 @@ func (r *DBCache[T]) FirstSorted(
 	}
 
 	if list == nil || len(list) == 0 {
-		return nil, fmt.Errorf("no matching record")
+		return nil, ErrRecordNotFound
 	}
 
 	if less != nil {

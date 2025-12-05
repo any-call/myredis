@@ -3,8 +3,11 @@ package myredis
 import (
 	"bytes"
 	"encoding/gob"
+	"errors"
 	"fmt"
 )
+
+var ErrRecordNotFound = errors.New("record not found")
 
 const (
 	OneSecond = 1
