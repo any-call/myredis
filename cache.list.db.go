@@ -4,14 +4,13 @@ import (
 	"sort"
 )
 
-type DBCache[T any] struct {
+type DBListCache[T any] struct {
 	client Client
-	key    string              // Redis key
-	loadFn func() ([]T, error) // DB 加载接口
-	exp    int                 // 过期时间（可选）
+	key    string                   // Redis key
+	loadFn func() ([]T, int, error) // DB 加载接口
 }
 
-func NewDBCache[T any](c Client, key string, loadFn func() ([]T, error), ttl int) *DBCache[T] {
+func NewDBListCache[T any](c Client, key string, loadFn func() ([]T, int, error)) *DBListCache[T] {
 	if c == nil {
 		panic("client is nil")
 	}
@@ -24,15 +23,14 @@ func NewDBCache[T any](c Client, key string, loadFn func() ([]T, error), ttl int
 		panic("load fn is nil ")
 	}
 
-	return &DBCache[T]{
+	return &DBListCache[T]{
 		client: c,
 		key:    key,
 		loadFn: loadFn,
-		exp:    ttl,
 	}
 }
 
-func (r *DBCache[T]) List() ([]T, error) {
+func (r *DBListCache[T]) List() ([]T, error) {
 	var list []T
 	err := r.client.GetFromJson(r.key, &list)
 	if err == nil {
@@ -43,7 +41,7 @@ func (r *DBCache[T]) List() ([]T, error) {
 	return r.refresh()
 }
 
-func (r *DBCache[T]) First(condition func(ret T) bool) (*T, error) {
+func (r *DBListCache[T]) First(condition func(ret T) bool) (*T, error) {
 	list, err := r.List()
 	if err != nil {
 		return nil, err
@@ -64,7 +62,7 @@ func (r *DBCache[T]) First(condition func(ret T) bool) (*T, error) {
 	return nil, ErrRecordNotFound
 }
 
-func (r *DBCache[T]) FirstSorted(
+func (r *DBListCache[T]) FirstSorted(
 	cond func(T) bool,
 	less func(a, b T) bool,
 ) (*T, error) {
@@ -86,7 +84,7 @@ func (r *DBCache[T]) FirstSorted(
 	return &list[0], nil
 }
 
-func (r *DBCache[T]) Find(cond func(T) bool) ([]T, error) {
+func (r *DBListCache[T]) Find(cond func(T) bool) ([]T, error) {
 	list, err := r.List()
 	if err != nil {
 		return nil, err
@@ -103,7 +101,7 @@ func (r *DBCache[T]) Find(cond func(T) bool) ([]T, error) {
 	return ret, nil
 }
 
-func (r *DBCache[T]) FindSorted(
+func (r *DBListCache[T]) FindSorted(
 	cond func(T) bool,
 	less func(a, b T) bool,
 ) ([]T, error) {
@@ -121,17 +119,17 @@ func (r *DBCache[T]) FindSorted(
 	return list, nil
 }
 
-func (r *DBCache[T]) Invalidate() error {
+func (r *DBListCache[T]) Invalidate() error {
 	return r.client.Del(r.key)
 }
 
-func (r *DBCache[T]) refresh() ([]T, error) {
-	list, err := r.loadFn()
+func (r *DBListCache[T]) refresh() ([]T, error) {
+	list, ttl, err := r.loadFn()
 	if err != nil {
 		return nil, err
 	}
 
-	if err := r.client.SetAsJson(r.key, list, r.exp); err != nil {
+	if err := r.client.SetAsJson(r.key, list, ttl); err != nil {
 		return nil, err
 	}
 
