@@ -2,12 +2,14 @@ package myredis
 
 import (
 	"sort"
+	"sync"
 )
 
 type DBListCache[T any] struct {
-	client Client
-	key    string                   // Redis key
-	loadFn func() ([]T, int, error) // DB 加载接口
+	sync.Mutex // 新增
+	client     Client
+	key        string                   // Redis key
+	loadFn     func() ([]T, int, error) // DB 加载接口
 }
 
 func NewDBListCache[T any](c Client, key string, loadFn func() ([]T, int, error)) *DBListCache[T] {
@@ -37,7 +39,16 @@ func (r *DBListCache[T]) List() ([]T, error) {
 		return list, nil
 	}
 
-	// 缓存未命中 → DB 查询并更新
+	// 2️⃣ 加锁，防止并发 refresh
+	r.Lock()
+	defer r.Unlock()
+
+	// 3️⃣ double check（非常关键）
+	if err := r.client.GetFromJson(r.key, &list); err == nil {
+		return list, nil
+	}
+
+	// 4️⃣ 真正 refresh
 	return r.refresh()
 }
 
