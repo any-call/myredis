@@ -50,6 +50,45 @@ func (r *DBMapCache[K, V]) Get(key K) (*V, error) {
 	return nil, ErrRecordNotFound
 }
 
+func (r *DBMapCache[K, V]) First(condition func(ret V) bool) (*V, error) {
+	list, err := r.Map()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, item := range list {
+		if condition == nil {
+			return &item, nil
+		} else {
+			if condition(item) {
+				return &item, nil
+			}
+		}
+	}
+
+	return nil, ErrRecordNotFound
+}
+
+func (r *DBMapCache[K, V]) Find(cond func(V) bool) ([]V, error) {
+	list, err := r.Map()
+	if err != nil {
+		return nil, err
+	}
+
+	var ret []V
+	for _, item := range list {
+		if cond == nil {
+			ret = append(ret, item)
+		} else {
+			if cond(item) {
+				ret = append(ret, item)
+			}
+		}
+	}
+
+	return ret, nil
+}
+
 func (r *DBMapCache[K, V]) Invalidate() error {
 	return r.client.Del(r.key)
 }
