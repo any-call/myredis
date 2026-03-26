@@ -16,6 +16,11 @@ const (
 	OneDay    = OneHour * 24
 )
 
+type ZItem struct {
+	Score  float64
+	Member any
+}
+
 type Client interface {
 	Set(key string, v any, ttl int) error //ttl==0 ，永不过期
 	SetAsJson(key string, v any, ttl int) error
@@ -27,6 +32,36 @@ type Client interface {
 	Exist(key string) (bool, error)
 	RemainingTTL(key string) (int64, error)
 	Expire(key string, ttl int) error
+
+	//增加Zset 标准封装
+	// ZAdd 向有序集合添加一个或多个成员。
+	// 如果成员已存在，则更新其 score。
+	// ttl==0 表示不设置过期时间，否则写入后会给整个 key 设置过期时间。
+	ZAdd(key string, ttl int, items ...ZItem) error
+	// ZRem 从有序集合中删除一个或多个成员。
+	// 不存在的成员会被忽略。
+	ZRem(key string, members ...any) error
+
+	// ZRemRangeByScore 删除指定 score 区间内的所有成员。
+	// 常用于清理“过期时间作为 score”的数据。
+	// min / max 可传数字，也可传 Redis 支持的区间表达式，如 "-inf"、"+inf"。
+	ZRemRangeByScore(key, min, max any) error
+
+	// ZCard 返回有序集合当前成员数量。
+	ZCard(key string) (int64, error)
+
+	// ZRange 按 score 升序返回指定下标范围内的成员。
+	// start / stop 的语义与 Redis ZRANGE 一致，支持负数下标。
+	ZRange(key string, start, stop int64) ([]string, error)
+
+	// ZRangeByScore 按 score 区间返回成员列表，结果按 score 升序排列。
+	// min / max 可传数字，也可传 Redis 支持的区间表达式，如 "-inf"、"+inf"。
+	ZRangeByScore(key string, min, max any) ([]string, error)
+
+	// ZScore 查询指定成员当前的 score。
+	// 如果成员不存在，返回 ErrNotFound。
+	ZScore(key string, member any) (float64, error)
+
 	Conn() error
 }
 

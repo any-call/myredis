@@ -5,9 +5,10 @@ import (
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
-	"github.com/gomodule/redigo/redis"
 	"sync"
 	"time"
+
+	"github.com/gomodule/redigo/redis"
 )
 
 type client struct {
@@ -160,6 +161,82 @@ func (self *client) RemainingTTL(key string) (int64, error) {
 	}
 
 	return v.(int64), nil
+}
+
+// ZAdd 向 zset 中添加或更新成员，并可选设置整个 key 的 TTL。
+func (self *client) ZAdd(key string, ttl int, items ...ZItem) error {
+	if len(items) == 0 {
+		return nil
+	}
+
+	args := make([]any, 0, 1+len(items)*2)
+	args = append(args, key)
+	for _, item := range items {
+		args = append(args, item.Score, item.Member)
+	}
+
+	if _, err := self.doCommand("ZADD", args...); err != nil {
+		return err
+	}
+
+	if ttl != 0 {
+		if _, err := self.doCommand("EXPIRE", key, ttl); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// ZRem 删除 zset 中的一个或多个成员。
+func (self *client) ZRem(key string, members ...any) error {
+	if len(members) == 0 {
+		return nil
+	}
+
+	args := make([]any, 0, 1+len(members))
+	args = append(args, key)
+	args = append(args, members...)
+
+	_, err := self.doCommand("ZREM", args...)
+	return err
+}
+
+// ZRemRangeByScore 删除 zset 中指定 score 区间的成员。
+func (self *client) ZRemRangeByScore(key, min, max any) error {
+	_, err := self.doCommand("ZREMRANGEBYSCORE", key, min, max)
+	return err
+}
+
+// ZCard 返回 zset 的成员总数。
+func (self *client) ZCard(key string) (int64, error) {
+	v, err := redis.Int64(self.doCommand("ZCARD", key))
+	if err != nil {
+		return 0, err
+	}
+	return v, nil
+}
+
+// ZRange 返回 zset 中指定下标范围的成员列表。
+func (self *client) ZRange(key string, start, stop int64) ([]string, error) {
+	return redis.Strings(self.doCommand("ZRANGE", key, start, stop))
+}
+
+// ZRangeByScore 返回 zset 中指定 score 区间的成员列表。
+func (self *client) ZRangeByScore(key string, min, max any) ([]string, error) {
+	return redis.Strings(self.doCommand("ZRANGEBYSCORE", key, min, max))
+}
+
+// ZScore 返回 zset 中指定成员的 score。
+func (self *client) ZScore(key string, member any) (float64, error) {
+	v, err := redis.Float64(self.doCommand("ZSCORE", key, member))
+	if err != nil {
+		if err == redis.ErrNil {
+			return 0, ErrNotFound
+		}
+		return 0, err
+	}
+	return v, nil
 }
 
 func (self *client) Conn() error {
